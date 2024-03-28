@@ -50,12 +50,12 @@ jobs:
       #    SAUCE_ACCESS_KEY: ${{secrets.SAUCE_ACCESS_KEY}}
       #   run: npm run test-browser
 
-      - name: "Coverage Push"
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          flag-name: unit-${{ matrix.node }}
-          parallel: true
+      #- name: "Coverage Push"
+      #  uses: coverallsapp/github-action@v2
+      #  with:
+      #    github-token: ${{ secrets.GITHUB_TOKEN }}
+      #    flag-name: unit-${{ matrix.node }}
+      #    parallel: true
 
       - name: "Artifacts"
         uses: actions/upload-artifact@v4
@@ -66,31 +66,31 @@ jobs:
           if-no-files-found: error
 
 
-  ghpages:
-    name: "GH Pages"
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: "Checkout"
-        uses: actions/checkout@v4
-
-      - name: "Setup node"
-        uses: actions/setup-node@v4
-        with:
-          node-version: latest
-          cache: npm
-
-      - name: "npm ci"
-        run: npm ci
-
-      - name: "GH Pages Prepare"
-        run: npm run ghpages
-
-      - name: "GH Pages Push"
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          publish_dir: docs
+#  ghpages:
+#    name: "GH Pages"
+#    if: github.ref == 'refs/heads/main'
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: "Checkout"
+#        uses: actions/checkout@v4
+#
+#      - name: "Setup node"
+#        uses: actions/setup-node@v4
+#        with:
+#          node-version: latest
+#          cache: npm
+#
+#      - name: "npm ci"
+#        run: npm ci
+#
+#      - name: "GH Pages Prepare"
+#        run: npm run ghpages
+#
+#      - name: "GH Pages Push"
+#        uses: peaceiris/actions-gh-pages@v3
+#        with:
+#          github_token: ${{secrets.GITHUB_TOKEN}}
+#          publish_dir: docs
 
   timezones:
     name: "Timezones"
@@ -136,12 +136,12 @@ jobs:
           name: timezones
           path: dist/ical.timezones.js
 
-  finish:
-    needs: [build-and-test, timezones]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Coveralls Finished
-        uses: coverallsapp/github-action@v2
-        with:
-          github-token: ${{ secrets.github_token }}
-          parallel-finished: true
+#  finish:
+#    needs: [build-and-test, timezones]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Coveralls Finished
+#        uses: coverallsapp/github-action@v2
+#        with:
+#          github-token: ${{ secrets.github_token }}
+#          parallel-finished: true

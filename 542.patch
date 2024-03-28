@@ -1,0 +1,22 @@
+From f2e0b1e0193c24ac465692635f09888866e46fe9 Mon Sep 17 00:00:00 2001
+From: Geoff Lankow <geoff@darktrojan.net>
+Date: Tue, 16 Aug 2022 11:09:42 +1200
+Subject: [PATCH] Prevent modification of Period jCal object when converting to
+ iCal string
+
+---
+ lib/ical/design.js | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lib/ical/design.js b/lib/ical/design.js
+index 19dbcec3..d45e8095 100644
+--- a/lib/ical/design.js
++++ b/lib/ical/design.js
+@@ -431,6 +431,7 @@ ICAL.design = (function() {
+       },
+ 
+       toICAL: function(parts) {
++        parts = parts.slice();
+         if (!design.strict && parts[0].length == 10) {
+           parts[0] = icalValues.date.toICAL(parts[0]);
+         } else {

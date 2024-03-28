@@ -1,21 +1,41 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ---
 
-name: Publish Package to npmjs
+name: "Publish Package to npmjs"
 on:
   release:
     types: [published]
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      # Setup .npmrc file to publish to npm
-      - uses: actions/setup-node@v4
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Setup Node"
+        uses: actions/setup-node@v4
         with:
           node-version: node
           registry-url: 'https://registry.npmjs.org'
-      - run: npm ci
-      - run: npm publish
+
+      - name: "npm ci"
+        run: npm ci
+
+      - name: "Build"
+        run: npm run build
+
+      - name: "Linters"
+        run: npm run lint
+
+      - name: "Node Unit Tests"
+        run: npm run test-unit
+
+      - name: "Node Acceptance Tests"
+        run: npm run test-acceptance
+
+      - name: "NPM Publish"
+        run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-

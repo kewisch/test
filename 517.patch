@@ -1,0 +1,289 @@
+From 1433975df1df854bf83f4aeaaae64e54f2ae5535 Mon Sep 17 00:00:00 2001
+From: Giuseppe Lippolis <workgroupengineering@outlook.com>
+Date: Sat, 2 Jul 2022 10:48:46 +0200
+Subject: [PATCH 1/6] feat(vcard): phone-number escape comma and semicolon
+
+---
+ lib/ical/design.js | 24 ++++++++++++++++++++----
+ 1 file changed, 20 insertions(+), 4 deletions(-)
+
+diff --git a/lib/ical/design.js b/lib/ical/design.js
+index 19dbcec3..64bc1c0c 100644
+--- a/lib/ical/design.js
++++ b/lib/ical/design.js
+@@ -50,6 +50,16 @@ ICAL.design = (function() {
+     return result;
+   }
+ 
++  function fmap(source, predicate) {
++    return source.reduce((accum, ...args) => {
++        const x = predicate(...args);
++        if(x !== undefined) {
++            accum.push(x);
++        }
++        return accum;
++    }, []);
++  }
++
+   // default types used multiple times
+   var DEFAULT_TYPE_TEXT = { defaultType: "text" };
+   var DEFAULT_TYPE_TEXT_MULTI = { defaultType: "text", multiValue: "," };
+@@ -746,6 +756,15 @@ ICAL.design = (function() {
+     timestamp: icalValues['date-time'],
+     "language-tag": {
+       matches: /^[a-zA-Z0-9-]+$/ // Could go with a more strict regex here
++    },
++    "phone-number":{
++      fromICAL: function(aValue) {
++        return fmap(Array.from(aValue), c => c==='\\' ? undefined : c  ).join('');
++      },
++
++      toICAL: function(aValue) {       
++        return Array.from(aValue).map(c=> c===',' || c===";" ? '\\' + c : c ).join('');
++      }
+     }
+   });
+ 
+@@ -802,10 +821,7 @@ ICAL.design = (function() {
+     binary: icalValues.binary,
+     date: vcardValues.date,
+     "date-time": vcardValues["date-time"],
+-    "phone-number": {
+-      // TODO
+-      /* ... */
+-    },
++    "phone-number": vcardValues["phone-number"],
+     uri: icalValues.uri,
+     text: icalValues.text,
+     time: icalValues.time,
+
+From 8a140f7ab45ef197a4a9c8473a2d915867250c56 Mon Sep 17 00:00:00 2001
+From: Giuseppe Lippolis <workgroupengineering@outlook.com>
+Date: Sat, 2 Jul 2022 10:49:30 +0200
+Subject: [PATCH 2/6] test(vcard): phone-number escape comma and semicolon
+
+---
+ test/parse_test.js                |  3 ++-
+ test/parser/escape_semicolon.json | 26 ++++++++++++++++++++++++++
+ test/parser/escape_semicolon.vcf  | 23 +++++++++++++++++++++++
+ 3 files changed, 51 insertions(+), 1 deletion(-)
+ create mode 100644 test/parser/escape_semicolon.json
+ create mode 100644 test/parser/escape_semicolon.vcf
+
+diff --git a/test/parse_test.js b/test/parse_test.js
+index 3e4efe58..fc9f7084 100644
+--- a/test/parse_test.js
++++ b/test/parse_test.js
+@@ -39,7 +39,8 @@ suite('parserv2', function() {
+       'vcard.vcf',
+       'vcard_author.vcf',
+       'vcard3.vcf',
+-      'vcard_grouped.vcf'
++      'vcard_grouped.vcf',
++      'escape_semicolon.vcf'
+     ];
+ 
+     list.forEach(function(path) {
+diff --git a/test/parser/escape_semicolon.json b/test/parser/escape_semicolon.json
+new file mode 100644
+index 00000000..8429f68d
+--- /dev/null
++++ b/test/parser/escape_semicolon.json
+@@ -0,0 +1,26 @@
++[
++    "vcard",
++    [
++     [ "version", {}, "text", "3.0" ],
++     [ "prodid",  {}, "text", "-//Sabre//Sabre VObject 4.1.6//EN" ],
++     [ "uid", {}, "text", "ad612c16-fe12-4ec5-abf6-49998ee5ab88" ],
++     [ "fn", {}, "text", "First Last NextCloud" ],
++     [ "adr", { "type": "HOME" },  "text", [ "PO", "Street 2", "Street", "City", "AL", "zip", "Germany" ] ],
++     [ "adr", { "type": "WORK" },  "text", [ "PO W", "Street 2 W", "Street W", "City Work", "AL work", "zip Work", "Germany work" ] ],
++     [ "email",  { "type": "HOME" }, "text", "home@gmx.de" ],
++     [ "email",  { "type": "WORK" }, "text", "work@gmx.de" ],
++     [ "tel", { "type": [ "HOME", "VOICE" ] }, "phone-number", "11111111" ],
++     [ "tel", { "type": "CELL" }, "phone-number", "205333" ],
++     [ "tel", { "type": ["WORK", "FAX" ] }, "phone-number", "205246;;,;" ],
++     [ "tel", { "type": ["WORK", "VOICE" ] }, "phone-number", "222222" ],
++     [ "org", {}, "text", "Firma" ],
++     [ "bday", {}, "date-time", "2019-02-10T00:00:33" ],
++     [ "nickname", {}, "text", "Hugo" ],
++     [ "x-abdate",  {"group": "item1"}, "date-and-or-time", "20190220T000035" ],
++     [ "x-ablabel", {"group": "item1"}, "unknown", "_$!<Anniversary>!$_" ],
++     [ "x-anniversary", {}, "date-and-or-time", "20190220T000035" ],
++     [ "categories", {}, "text", "Test-Kontakte" ],
++     [ "rev", {}, "date-time", "2019-10-08T17:05:14Z" ]
++    ],
++    []
++ ]
+\ No newline at end of file
+diff --git a/test/parser/escape_semicolon.vcf b/test/parser/escape_semicolon.vcf
+new file mode 100644
+index 00000000..38f792c7
+--- /dev/null
++++ b/test/parser/escape_semicolon.vcf
+@@ -0,0 +1,23 @@
++BEGIN:VCARD
++VERSION:3.0
++PRODID:-//Sabre//Sabre VObject 4.1.6//EN
++UID:ad612c16-fe12-4ec5-abf6-49998ee5ab88
++FN:First Last NextCloud
++ADR;TYPE=HOME:PO;Street 2;Street;City;AL;zip;Germany
++ADR;TYPE=WORK:PO W;Street 2 W;Street W;City Work;AL work;zip Work;Germany w
++ ork
++EMAIL;TYPE=HOME:home@gmx.de
++EMAIL;TYPE=WORK:work@gmx.de
++TEL;TYPE="HOME,VOICE":11111111
++TEL;TYPE=CELL:205333
++TEL;TYPE="WORK,FAX":205246\;\;\,\;
++TEL;TYPE="WORK,VOICE":222222
++ORG:Firma
++BDAY:20190210T000033
++NICKNAME:Hugo
++ITEM1.X-ABDATE;VALUE=DATE-AND-OR-TIME:20190220T000035
++ITEM1.X-ABLABEL:_$!<Anniversary>!$_
++X-ANNIVERSARY;VALUE=DATE-AND-OR-TIME:20190220T000035
++CATEGORIES:Test-Kontakte
++REV;VALUE=DATE-AND-OR-TIME:20191008T170514Z
++END:VCARD
+
+From 7b886b651df9b68c5c4304eae4a91ff6468ae5fc Mon Sep 17 00:00:00 2001
+From: Giuseppe Lippolis <workgroupengineering@outlook.com>
+Date: Wed, 17 Aug 2022 17:40:52 +0200
+Subject: [PATCH 3/6] fix code style
+
+---
+ lib/ical/design.js | 24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
+
+diff --git a/lib/ical/design.js b/lib/ical/design.js
+index 64bc1c0c..7b3ccd2c 100644
+--- a/lib/ical/design.js
++++ b/lib/ical/design.js
+@@ -51,12 +51,12 @@ ICAL.design = (function() {
+   }
+ 
+   function fmap(source, predicate) {
+-    return source.reduce((accum, ...args) => {
+-        const x = predicate(...args);
+-        if(x !== undefined) {
+-            accum.push(x);
+-        }
+-        return accum;
++    return source.reduce(function(accum, args) {
++      var x = predicate(args);
++      if (x !== undefined) {
++        accum.push(x);
++      }
++      return accum;
+     }, []);
+   }
+ 
+@@ -757,13 +757,17 @@ ICAL.design = (function() {
+     "language-tag": {
+       matches: /^[a-zA-Z0-9-]+$/ // Could go with a more strict regex here
+     },
+-    "phone-number":{
++    "phone-number": {
+       fromICAL: function(aValue) {
+-        return fmap(Array.from(aValue), c => c==='\\' ? undefined : c  ).join('');
++        return fmap(Array.from(aValue), function(c) {
++            return c === '\\' ? undefined : c;
++          }).join('');
+       },
+ 
+-      toICAL: function(aValue) {       
+-        return Array.from(aValue).map(c=> c===',' || c===";" ? '\\' + c : c ).join('');
++      toICAL: function(aValue) {
++        return Array.from(aValue).map(function(c) {
++          return c === ',' || c === ";" ? '\\' + c : c;
++        }).join('');
+       }
+     }
+   });
+
+From 4888a9d9e8300bfd548ca80c95712806d84b4a37 Mon Sep 17 00:00:00 2001
+From: Giuseppe Lippolis <workgroupengineering@outlook.com>
+Date: Wed, 17 Aug 2022 17:52:00 +0200
+Subject: [PATCH 4/6] replace fmap with Array.filter
+
+---
+ lib/ical/design.js | 13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
+
+diff --git a/lib/ical/design.js b/lib/ical/design.js
+index 7b3ccd2c..5be941cf 100644
+--- a/lib/ical/design.js
++++ b/lib/ical/design.js
+@@ -50,16 +50,6 @@ ICAL.design = (function() {
+     return result;
+   }
+ 
+-  function fmap(source, predicate) {
+-    return source.reduce(function(accum, args) {
+-      var x = predicate(args);
+-      if (x !== undefined) {
+-        accum.push(x);
+-      }
+-      return accum;
+-    }, []);
+-  }
+-
+   // default types used multiple times
+   var DEFAULT_TYPE_TEXT = { defaultType: "text" };
+   var DEFAULT_TYPE_TEXT_MULTI = { defaultType: "text", multiValue: "," };
+@@ -759,7 +749,8 @@ ICAL.design = (function() {
+     },
+     "phone-number": {
+       fromICAL: function(aValue) {
+-        return fmap(Array.from(aValue), function(c) {
++        
++        return Array.from(aValue).filter(function(c) {
+             return c === '\\' ? undefined : c;
+           }).join('');
+       },
+
+From c160a7f4a88fe4779c2bc7cac4fc362a90dad682 Mon Sep 17 00:00:00 2001
+From: Giuseppe Lippolis <workgroupengineering@outlook.com>
+Date: Wed, 17 Aug 2022 18:00:53 +0200
+Subject: [PATCH 5/6] fix test
+
+---
+ test/parser/escape_semicolon.vcf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/parser/escape_semicolon.vcf b/test/parser/escape_semicolon.vcf
+index 38f792c7..04d71890 100644
+--- a/test/parser/escape_semicolon.vcf
++++ b/test/parser/escape_semicolon.vcf
+@@ -19,5 +19,5 @@ ITEM1.X-ABDATE;VALUE=DATE-AND-OR-TIME:20190220T000035
+ ITEM1.X-ABLABEL:_$!<Anniversary>!$_
+ X-ANNIVERSARY;VALUE=DATE-AND-OR-TIME:20190220T000035
+ CATEGORIES:Test-Kontakte
+-REV;VALUE=DATE-AND-OR-TIME:20191008T170514Z
++REV:20191008T170514Z
+ END:VCARD
+
+From d6b2c41ab070a150c94f7bc33b07198880d18b9a Mon Sep 17 00:00:00 2001
+From: Giuseppe Lippolis <workgroupengineering@outlook.com>
+Date: Thu, 18 Aug 2022 14:38:12 +0200
+Subject: [PATCH 6/6] gix lint
+
+---
+ lib/ical/design.js | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/lib/ical/design.js b/lib/ical/design.js
+index 5be941cf..4eecf452 100644
+--- a/lib/ical/design.js
++++ b/lib/ical/design.js
+@@ -748,8 +748,7 @@ ICAL.design = (function() {
+       matches: /^[a-zA-Z0-9-]+$/ // Could go with a more strict regex here
+     },
+     "phone-number": {
+-      fromICAL: function(aValue) {
+-        
++      fromICAL: function(aValue) {        
+         return Array.from(aValue).filter(function(c) {
+             return c === '\\' ? undefined : c;
+           }).join('');

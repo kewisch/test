@@ -35,6 +35,13 @@ jobs:
       - name: "Node Acceptance Tests"
         run: npm run test-acceptance
 
+      - name: "Attach release assets"
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} dist/ical.js
+          gh release upload ${{ github.event.release.tag_name }} dist/ical.min.js
+          gh release upload ${{ github.event.release.tag_name }} dist/ical.es5.cjs
+          gh release upload ${{ github.event.release.tag_name }} dist/ical.es5.min.cjs
+
       - name: "NPM Publish"
         run: npm publish
         env:

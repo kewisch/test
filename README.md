@@ -1,4 +1,4 @@
 # test
 
 
-[test](./issues/1)
+Issue #1
